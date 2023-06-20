@@ -1,0 +1,20 @@
+{
+  "version": "32.0.0",
+  "files": {
+    "43397437c875e9dfd9f1650c7d8ac4566cd2efd5a9b88784f83a263b0e0bab69": {
+      "source": {
+        "path": "UrbondoInfrastructureStack.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "925570863662-us-east-1": {
+          "bucketName": "cdk-hnb659fds-assets-925570863662-us-east-1",
+          "objectKey": "43397437c875e9dfd9f1650c7d8ac4566cd2efd5a9b88784f83a263b0e0bab69.json",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::925570863662:role/cdk-hnb659fds-file-publishing-role-925570863662-us-east-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}
