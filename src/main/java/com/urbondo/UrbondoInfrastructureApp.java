@@ -13,7 +13,6 @@ public class UrbondoInfrastructureApp {
                         .account(System.getenv("CDK_DEFAULT_ACCOUNT"))
                         .region(System.getenv("CDK_DEFAULT_REGION"))
                         .build())
-
                 .build());
 
         app.synth();
