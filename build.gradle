@@ -20,7 +20,7 @@ dependencies {
 group = 'com.urbondo'
 version = '0.1'
 description = 'urbondo_infrastructure'
-java.sourceCompatibility = JavaVersion.VERSION_1_8
+java.sourceCompatibility = JavaVersion.VERSION_17
 
 publishing {
     publications {

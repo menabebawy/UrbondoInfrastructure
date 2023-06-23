@@ -1,5 +1,6 @@
 package com.urbondo;
 
+import org.jetbrains.annotations.Nullable;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.dynamodb.Attribute;
@@ -14,7 +15,7 @@ import static software.amazon.awscdk.services.dynamodb.AttributeType.STRING;
 public class UrbondoInfrastructureStack extends Stack {
     private static final Number READ_CAPACITY = 1;
 
-    public UrbondoInfrastructureStack(final Construct scope, final String id, final StackProps props) {
+    public UrbondoInfrastructureStack(@Nullable Construct scope, @Nullable String id, @Nullable StackProps props) {
         super(scope, id, props);
 
 
