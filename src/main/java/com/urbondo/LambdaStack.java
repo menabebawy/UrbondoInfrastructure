@@ -14,10 +14,10 @@ public class LambdaStack extends Stack {
     public LambdaStack(@Nullable Construct scope, @Nullable String id, @Nullable StackProps props) {
         super(scope, id, props);
 
-        new Function(this, "FunctionOne", FunctionProps.builder()
+        new Function(this, "PrintRequest", FunctionProps.builder()
                 .runtime(Runtime.JAVA_17)
-                .code(Code.fromAsset("lambda/build/libs/lambda-0.1.jar"))
-                .handler("com.urbondo.FunctionOne")
+                .code(Code.fromAsset("lambda/build/distributions/lambda-0.1.zip"))
+                .handler("com.urbondo.PrintApiGatewayRequest")
                 .memorySize(1024)
                 .timeout(Duration.seconds(10))
                 .logRetention(RetentionDays.ONE_WEEK)

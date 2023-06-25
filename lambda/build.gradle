@@ -4,7 +4,6 @@ plugins {
 
 group = 'com.urbondo'
 version = '0.1'
-java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
     mavenCentral()
@@ -23,9 +22,16 @@ test {
 }
 
 
-tasks.register('buildZip', Zip) {
+task packageJar(type: Zip) {
     into('lib') {
         from(jar)
         from(configurations.runtimeClasspath)
     }
 }
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+build.dependsOn packageJar
