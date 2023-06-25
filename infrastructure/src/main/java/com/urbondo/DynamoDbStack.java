@@ -1,16 +1,11 @@
 package com.urbondo;
 
 import org.jetbrains.annotations.Nullable;
+import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.services.dynamodb.Attribute;
-import software.amazon.awscdk.services.dynamodb.GlobalSecondaryIndexProps;
-import software.amazon.awscdk.services.dynamodb.Table;
-import software.amazon.awscdk.services.dynamodb.TableProps;
+import software.amazon.awscdk.services.dynamodb.*;
 import software.constructs.Construct;
-
-import static software.amazon.awscdk.RemovalPolicy.DESTROY;
-import static software.amazon.awscdk.services.dynamodb.AttributeType.STRING;
 
 public class DynamoDbStack extends Stack {
     private static final Number READ_CAPACITY = 1;
@@ -32,10 +27,10 @@ public class DynamoDbStack extends Stack {
         String idAttributeName = "id";
 
         TableProps tableProps = TableProps.builder()
-                .partitionKey(Attribute.builder().name(idAttributeName).type(STRING).build())
+                .partitionKey(Attribute.builder().name(idAttributeName).type(AttributeType.STRING).build())
                 .readCapacity(READ_CAPACITY)
                 .writeCapacity(READ_CAPACITY)
-                .removalPolicy(DESTROY)
+                .removalPolicy(RemovalPolicy.DESTROY)
                 .tableName(prefix + "-" + name)
                 .build();
 
@@ -45,7 +40,7 @@ public class DynamoDbStack extends Stack {
     private GlobalSecondaryIndexProps globalSecondaryIndexProps(String attributeName) {
         return GlobalSecondaryIndexProps.builder()
                 .indexName(attributeName + "-index")
-                .partitionKey(Attribute.builder().name(attributeName).type(STRING).build())
+                .partitionKey(Attribute.builder().name(attributeName).type(AttributeType.STRING).build())
                 .readCapacity(READ_CAPACITY)
                 .writeCapacity(READ_CAPACITY)
                 .build();

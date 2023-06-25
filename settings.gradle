@@ -1,3 +1,4 @@
 rootProject.name = 'UrbondoInfrastructure'
 include 'lambda'
+include 'infrastructure'
 
