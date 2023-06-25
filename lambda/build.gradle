@@ -23,7 +23,7 @@ test {
 }
 
 
-task buildZip(type: Zip) {
+tasks.register('buildZip', Zip) {
     into('lib') {
         from(jar)
         from(configurations.runtimeClasspath)
