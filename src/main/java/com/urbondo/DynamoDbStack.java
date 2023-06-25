@@ -12,24 +12,23 @@ import software.constructs.Construct;
 import static software.amazon.awscdk.RemovalPolicy.DESTROY;
 import static software.amazon.awscdk.services.dynamodb.AttributeType.STRING;
 
-public class UrbondoInfrastructureStack extends Stack {
+public class DynamoDbStack extends Stack {
     private static final Number READ_CAPACITY = 1;
 
-    public UrbondoInfrastructureStack(@Nullable Construct scope, @Nullable String id, @Nullable StackProps props) {
+    public DynamoDbStack(@Nullable Construct scope, @Nullable String id, @Nullable StackProps props) {
         super(scope, id, props);
 
-
-        Table userTable = createTable("user");
+        Table userTable = createTableBySuffix("user");
         userTable.addGlobalSecondaryIndex(globalSecondaryIndexProps("email"));
 
-        Table categoryTable = createTable("category");
+        Table categoryTable = createTableBySuffix("category");
         categoryTable.addGlobalSecondaryIndex(globalSecondaryIndexProps("title"));
 
-        createTable("announcement");
+        createTableBySuffix("announcement");
     }
 
-    private Table createTable(String name) {
-        String prefix = "urbondo-";
+    private Table createTableBySuffix(String name) {
+        String prefix = "urbondo";
         String idAttributeName = "id";
 
         TableProps tableProps = TableProps.builder()
@@ -37,7 +36,7 @@ public class UrbondoInfrastructureStack extends Stack {
                 .readCapacity(READ_CAPACITY)
                 .writeCapacity(READ_CAPACITY)
                 .removalPolicy(DESTROY)
-                .tableName(prefix + name)
+                .tableName(prefix + "-" + name)
                 .build();
 
         return new Table(this, name, tableProps);

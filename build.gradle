@@ -22,22 +22,14 @@ version = '0.1'
 description = 'urbondo_infrastructure'
 java.sourceCompatibility = JavaVersion.VERSION_17
 
-publishing {
-    publications {
-        maven(MavenPublication) {
-            from(components.java)
-        }
-    }
-}
-
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
-tasks.withType(Javadoc) {
+tasks.withType(Javadoc).configureEach {
     options.encoding = 'UTF-8'
 }
 
 application {
-    mainClass = 'com.urbondo.UrbondoInfrastructureApp'
+    mainClass = 'com.urbondo.UrbondoApp'
 }

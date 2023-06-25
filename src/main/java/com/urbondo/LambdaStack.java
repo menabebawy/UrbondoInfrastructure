@@ -9,9 +9,9 @@ import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
-public class UrbondoLambdaStack extends Stack {
+public class LambdaStack extends Stack {
 
-    public UrbondoLambdaStack(@Nullable Construct scope, @Nullable String id, @Nullable StackProps props) {
+    public LambdaStack(@Nullable Construct scope, @Nullable String id, @Nullable StackProps props) {
         super(scope, id, props);
 
         new Function(this, "FunctionOne", FunctionProps.builder()
