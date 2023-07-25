@@ -16,7 +16,7 @@ public class LambdaStack extends Stack {
 
         new Function(this, "PrintRequest", FunctionProps.builder()
                 .runtime(Runtime.JAVA_17)
-                .code(Code.fromAsset("lambda/build/distributions/lambda-0.1.zip"))
+                .code(Code.fromAsset("../lambda/build/distributions/lambda-0.1.zip"))
                 .handler("com.urbondo.PrintApiGatewayRequest")
                 .memorySize(1024)
                 .timeout(Duration.seconds(10))

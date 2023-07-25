@@ -1,5 +1,5 @@
 {
-  "app": "./gradlew --quiet --stacktrace run",
+  "app": ".././gradlew --quiet --stacktrace run",
   "context": {
     "aws-cdk:enableDiffNoFail": "true"
   }
