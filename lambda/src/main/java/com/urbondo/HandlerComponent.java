@@ -1,11 +1,14 @@
 package com.urbondo;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import dagger.Component;
 
 import javax.inject.Singleton;
 
 @Singleton
-@Component(modules = HandlerModule.class)
+@Component(modules = {DynamoDBModule.class})
 public interface HandlerComponent {
-    PrintApiGatewayRequest buildPrintGatewayRequest();
+    void inject(PrintApiGatewayRequest printApiGatewayRequest);
+
+    DynamoDBMapper getDynamoDB();
 }

@@ -1,13 +1,11 @@
 package com.urbondo;
 
-import dagger.Module;
-import dagger.Provides;
-
-@Module
+//@Module
 public class HandlerModule {
 
-    @Provides
+
+  /*  @Provides
     public PrintApiGatewayRequest providesPrintApiGatewayRequest() {
         return new PrintApiGatewayRequest();
-    }
+    }*/
 }

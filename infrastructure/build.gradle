@@ -15,7 +15,8 @@ repositories {
 }
 
 dependencies {
-    api 'software.amazon.awscdk:aws-cdk-lib:2.84.0'
+    implementation 'software.amazon.awscdk:aws-cdk-lib:2.89.0'
+    implementation 'software.amazon.awscdk:apigatewayv2-integrations-alpha:2.89.0-alpha.0'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'
 }
 
