@@ -1,7 +1,9 @@
 package com.urbondo.api.service;
 
-public record UpdateUserRequestDto(String id,
-                                   String firstName,
-                                   String lastName,
-                                   String phone) {
+import jakarta.validation.constraints.NotBlank;
+
+public record UpdateUserRequestDto(@NotBlank String id,
+                                   @NotBlank String firstName,
+                                   @NotBlank String lastName,
+                                   @NotBlank String phone) {
 }

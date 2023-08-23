@@ -12,6 +12,7 @@ repositories {
 }
 
 dependencies {
+    implementation 'org.springframework:spring-web:6.0.0'
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.2'
     implementation 'com.amazonaws:aws-lambda-java-events:3.11.1'
     implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.12.472'

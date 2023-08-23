@@ -43,7 +43,7 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    public UserDao updateById(UpdateUserRequestDto updateUserRequestDTO) {
+    public UserDao update(UpdateUserRequestDto updateUserRequestDTO) {
         UserDao userDAO = findByIdOrThrowException(updateUserRequestDTO.id());
 
         userDAO.setFirstName(updateUserRequestDTO.firstName());
@@ -61,7 +61,7 @@ public class UserServiceImpl implements UserService {
     private UserDao findByIdOrThrowException(String id) {
         Optional<UserDao> userDAO = userRepository.findById(id);
         if (userDAO.isEmpty()) {
-            //throw new UserNotFoundException(id);
+            throw new UserNotFoundException(id);
         }
         return userDAO.get();
     }

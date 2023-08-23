@@ -9,7 +9,7 @@ public interface UserService {
 
     UserDao add(AddUserRequestDto requestDTO);
 
-    UserDao updateById(UpdateUserRequestDto updateUserRequestDTO);
+    UserDao update(UpdateUserRequestDto updateUserRequestDTO);
 
     void deleteBy(String id);
 }
