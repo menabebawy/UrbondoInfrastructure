@@ -1,4 +1,4 @@
-package com.urbondo.api.repository;
+package com.urbondo.api.user.repository;
 
 import com.urbondo.lib.UrbondoRepository;
 

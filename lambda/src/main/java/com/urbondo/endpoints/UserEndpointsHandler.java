@@ -3,8 +3,8 @@ package com.urbondo.endpoints;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.google.gson.Gson;
-import com.urbondo.api.repository.UserDao;
-import com.urbondo.api.service.*;
+import com.urbondo.api.user.repository.UserDao;
+import com.urbondo.api.user.service.*;
 import com.urbondo.dagger.DaggerUserEndpointComponent;
 import com.urbondo.lib.ErrorResponse;
 import com.urbondo.lib.ResourceNotFoundException;
@@ -23,7 +23,7 @@ import static org.apache.http.HttpStatus.*;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
-public class UserEndpointsHandler {
+public class UserEndpointsHandler implements EndpointHandler {
     @Inject
     UserService userService;
     @Inject
@@ -31,19 +31,20 @@ public class UserEndpointsHandler {
     @Inject
     Validator validator;
 
+    @Override
     public APIGatewayProxyResponseEvent handle(APIGatewayProxyRequestEvent requestEvent) {
         DaggerUserEndpointComponent.create().inject(this);
 
         APIGatewayProxyResponseEvent responseEvent;
 
         if (requestEvent.getHttpMethod().equals(GET.name())) {
-            responseEvent = getUser(requestEvent);
+            responseEvent = getUser(requestEvent.getPathParameters().get("id"));
         } else if (requestEvent.getHttpMethod().equals(POST.name())) {
-            responseEvent = addNewUser(requestEvent);
+            responseEvent = addNewUser(requestEvent.getBody());
         } else if (requestEvent.getHttpMethod().equals(PUT.name())) {
-            responseEvent = updateUser(requestEvent);
+            responseEvent = updateUser(requestEvent.getBody());
         } else if (requestEvent.getHttpMethod().equals(DELETE.name())) {
-            responseEvent = deleteUser(requestEvent);
+            responseEvent = deleteUser(requestEvent.getPathParameters().get("id"));
         } else {
             responseEvent = new APIGatewayProxyResponseEvent().withStatusCode(SC_METHOD_NOT_ALLOWED);
         }
@@ -51,9 +52,9 @@ public class UserEndpointsHandler {
         return responseEvent.withHeaders(Collections.singletonMap("content-type", "application/json"));
     }
 
-    private APIGatewayProxyResponseEvent getUser(APIGatewayProxyRequestEvent requestEvent) {
+    private APIGatewayProxyResponseEvent getUser(String id) {
         try {
-            UserDao userDao = userService.findById(requestEvent.getPathParameters().get("id"));
+            UserDao userDao = userService.findById(id);
             return new APIGatewayProxyResponseEvent()
                     .withStatusCode(SC_OK)
                     .withBody(gson.toJson(userDao));
@@ -63,9 +64,9 @@ public class UserEndpointsHandler {
         }
     }
 
-    private APIGatewayProxyResponseEvent addNewUser(APIGatewayProxyRequestEvent requestEvent) {
+    private APIGatewayProxyResponseEvent addNewUser(String body) {
         try {
-            AddUserRequestDto requestDto = gson.fromJson(requestEvent.getBody(), AddUserRequestDto.class);
+            AddUserRequestDto requestDto = gson.fromJson(body, AddUserRequestDto.class);
 
             Set<ConstraintViolation<AddUserRequestDto>> violations = validator.validate(requestDto);
             if (!violations.isEmpty()) {
@@ -84,9 +85,9 @@ public class UserEndpointsHandler {
         }
     }
 
-    private APIGatewayProxyResponseEvent updateUser(APIGatewayProxyRequestEvent requestEvent) {
+    private APIGatewayProxyResponseEvent updateUser(String body) {
         try {
-            UpdateUserRequestDto requestDto = gson.fromJson(requestEvent.getBody(), UpdateUserRequestDto.class);
+            UpdateUserRequestDto requestDto = gson.fromJson(body, UpdateUserRequestDto.class);
 
             Set<ConstraintViolation<UpdateUserRequestDto>> violations = validator.validate(requestDto);
             if (!violations.isEmpty()) {
@@ -109,9 +110,9 @@ public class UserEndpointsHandler {
         }
     }
 
-    private APIGatewayProxyResponseEvent deleteUser(APIGatewayProxyRequestEvent requestEvent) {
+    private APIGatewayProxyResponseEvent deleteUser(String id) {
         try {
-            userService.deleteBy(requestEvent.getPathParameters().get("id"));
+            userService.deleteBy(id);
 
             return new APIGatewayProxyResponseEvent()
                     .withStatusCode(SC_NO_CONTENT);

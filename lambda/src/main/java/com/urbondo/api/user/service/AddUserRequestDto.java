@@ -1,4 +1,4 @@
-package com.urbondo.api.service;
+package com.urbondo.api.user.service;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;

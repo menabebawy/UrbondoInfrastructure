@@ -1,7 +1,7 @@
-package com.urbondo.api.service;
+package com.urbondo.api.user.service;
 
-import com.urbondo.api.repository.UserDao;
-import com.urbondo.api.repository.UserRepository;
+import com.urbondo.api.user.repository.UserDao;
+import com.urbondo.api.user.repository.UserRepository;
 import com.urbondo.lib.ResourceNotFoundException;
 
 import javax.inject.Inject;

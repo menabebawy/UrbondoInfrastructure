@@ -1,4 +1,4 @@
-package com.urbondo.api.service;
+package com.urbondo.api.user.service;
 
 import com.urbondo.lib.UrbondoException;
 
