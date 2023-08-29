@@ -24,7 +24,7 @@ public final class AnnouncementDao {
     @DynamoDBAttribute
     private String userId;
 
-    AnnouncementDao() {
+    public AnnouncementDao() {
     }
 
     public AnnouncementDao(String id,
@@ -39,6 +39,14 @@ public final class AnnouncementDao {
         this.categoryId = categoryId;
         this.categoryTitle = categoryTitle;
         this.userId = userId;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getTitle() {

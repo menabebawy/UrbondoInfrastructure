@@ -5,6 +5,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.google.gson.Gson;
 import com.urbondo.api.announcement.repositoy.AnnouncementDao;
 import com.urbondo.api.announcement.service.AddAnnouncementRequestDto;
+import com.urbondo.api.announcement.service.AnnouncementNotFoundException;
 import com.urbondo.api.announcement.service.AnnouncementService;
 import com.urbondo.api.announcement.service.UpdateAnnouncementRequestDto;
 import com.urbondo.api.category.service.CategoryNotFoundException;
@@ -61,8 +62,7 @@ public class AnnouncementEndpointsHandler implements EndpointHandler {
                     .withBody(gson.toJson(announcementDao));
         } catch (ResourceNotFoundException exception) {
             return new APIGatewayProxyResponseEvent()
-                    .withStatusCode(SC_NOT_FOUND)
-                    .withBody(gson.toJson(new ErrorResponse(NOT_FOUND, exception.getMessage())));
+                    .withStatusCode(SC_NOT_FOUND);
         }
     }
 
@@ -100,7 +100,7 @@ public class AnnouncementEndpointsHandler implements EndpointHandler {
             return new APIGatewayProxyResponseEvent()
                     .withStatusCode(SC_OK)
                     .withBody(gson.toJson(announcementDao));
-        } catch (CategoryNotFoundException | ValidationException exception) {
+        } catch (CategoryNotFoundException | AnnouncementNotFoundException | ValidationException exception) {
             return new APIGatewayProxyResponseEvent()
                     .withStatusCode(SC_BAD_REQUEST)
                     .withBody(gson.toJson(new ErrorResponse(BAD_REQUEST, exception.getMessage())));
@@ -112,7 +112,7 @@ public class AnnouncementEndpointsHandler implements EndpointHandler {
             announcementService.deleteById(id);
             return new APIGatewayProxyResponseEvent()
                     .withStatusCode(SC_NO_CONTENT);
-        } catch (ResourceNotFoundException exception) {
+        } catch (AnnouncementNotFoundException exception) {
             return new APIGatewayProxyResponseEvent()
                     .withStatusCode(SC_NOT_FOUND)
                     .withBody(gson.toJson(new ErrorResponse(NOT_FOUND, exception.getMessage())));
