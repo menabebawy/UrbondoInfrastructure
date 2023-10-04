@@ -1,6 +1,8 @@
 package com.urbondo;
 
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awscdk.*;
 import software.amazon.awscdk.services.apigateway.IResource;
 import software.amazon.awscdk.services.apigateway.*;
@@ -24,6 +26,7 @@ import static software.amazon.awssdk.regions.Region.US_EAST_1;
 
 public class UrbondoStack extends Stack {
     private static final Number READ_CAPACITY = 1;
+    private static final Logger logger = LoggerFactory.getLogger(UrbondoStack.class);
 
     public UrbondoStack(@Nullable Construct scope, @Nullable String id, @Nullable StackProps props) {
         super(scope, id, props);
@@ -147,7 +150,7 @@ public class UrbondoStack extends Stack {
                     .build();
             return cognitoClient.createUserPool(poolRequest);
         } catch (CognitoIdentityProviderException exception) {
-            System.err.println(exception.awsErrorDetails().errorMessage());
+            logger.error(exception.awsErrorDetails().errorMessage());
             System.exit(1);
         }
 
@@ -162,8 +165,8 @@ public class UrbondoStack extends Stack {
                     .generateSecret(true)
                     .build();
             cognitoClient.createUserPoolClient(poolClientRequest);
-        } catch (CognitoIdentityProviderException e) {
-            System.err.println(e.awsErrorDetails().errorMessage());
+        } catch (CognitoIdentityProviderException exception) {
+            logger.error(exception.awsErrorDetails().errorMessage());
             System.exit(1);
         }
     }
