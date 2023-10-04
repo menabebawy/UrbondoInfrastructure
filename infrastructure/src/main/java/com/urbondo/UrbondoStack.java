@@ -10,16 +10,27 @@ import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionProps;
 import software.amazon.awscdk.services.lambda.Runtime;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.CognitoIdentityProviderException;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateUserPoolClientRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateUserPoolRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateUserPoolResponse;
 import software.constructs.Construct;
 
 import static software.amazon.awscdk.services.apigateway.MethodLoggingLevel.INFO;
 import static software.amazon.awscdk.services.logs.RetentionDays.ONE_WEEK;
+import static software.amazon.awssdk.regions.Region.US_EAST_1;
 
 public class UrbondoStack extends Stack {
     private static final Number READ_CAPACITY = 1;
 
     public UrbondoStack(@Nullable Construct scope, @Nullable String id, @Nullable StackProps props) {
         super(scope, id, props);
+
+        CognitoIdentityProviderClient cognitoClient = cognitoProviderClient();
+        String userPoolId = createUserPool(cognitoClient).userPool().id();
+        createUserPoolClient(cognitoClient, userPoolId);
 
         Function lambdaFunction = createLambdaFunction();
 
@@ -74,7 +85,7 @@ public class UrbondoStack extends Stack {
     }
 
 
-    private void addResource(IResource rootResource, String path, ResourceOptions resourceOptions) {
+    private static void addResource(IResource rootResource, String path, ResourceOptions resourceOptions) {
         rootResource.addResource(path, resourceOptions)
                 .addMethod(HttpMethod.POST.name())
                 .getResource()
@@ -113,12 +124,47 @@ public class UrbondoStack extends Stack {
         return new Table(this, name, tableProps);
     }
 
-    private GlobalSecondaryIndexProps globalSecondaryIndexProps(String attributeName) {
+    private static GlobalSecondaryIndexProps globalSecondaryIndexProps(String attributeName) {
         return GlobalSecondaryIndexProps.builder()
                 .indexName(attributeName + "-index")
                 .partitionKey(Attribute.builder().name(attributeName).type(AttributeType.STRING).build())
                 .readCapacity(READ_CAPACITY)
                 .writeCapacity(READ_CAPACITY)
                 .build();
+    }
+
+    private static CognitoIdentityProviderClient cognitoProviderClient() {
+        return CognitoIdentityProviderClient.builder()
+                .region(US_EAST_1)
+                .credentialsProvider(ProfileCredentialsProvider.create())
+                .build();
+    }
+
+    private static CreateUserPoolResponse createUserPool(CognitoIdentityProviderClient cognitoClient) {
+        try {
+            CreateUserPoolRequest poolRequest = CreateUserPoolRequest.builder()
+                    .poolName("urbondo-user-pool")
+                    .build();
+            return cognitoClient.createUserPool(poolRequest);
+        } catch (CognitoIdentityProviderException exception) {
+            System.err.println(exception.awsErrorDetails().errorMessage());
+            System.exit(1);
+        }
+
+        return null;
+    }
+
+    private static void createUserPoolClient(CognitoIdentityProviderClient cognitoClient, String userPoolId) {
+        try {
+            CreateUserPoolClientRequest poolClientRequest = CreateUserPoolClientRequest.builder()
+                    .userPoolId(userPoolId)
+                    .clientName("urbondo-user-pool-client")
+                    .generateSecret(true)
+                    .build();
+            cognitoClient.createUserPoolClient(poolClientRequest);
+        } catch (CognitoIdentityProviderException e) {
+            System.err.println(e.awsErrorDetails().errorMessage());
+            System.exit(1);
+        }
     }
 }
