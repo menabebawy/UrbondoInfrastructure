@@ -9,12 +9,16 @@ public class UrbondoApp {
     public static void main(final String[] args) {
         App app = new App();
 
-        new UrbondoStack(app, UrbondoStack.class.getSimpleName(), StackProps.builder()
+        StackProps props = StackProps.builder()
                 .env(Environment.builder()
                         .account(System.getenv("CDK_DEFAULT_ACCOUNT"))
                         .region(System.getenv("CDK_DEFAULT_REGION"))
                         .build())
-                .build());
+                .build();
+
+        new UrbondoStack(app, UrbondoStack.class.getSimpleName(), props);
+
+        new CognitoStack(app, CognitoStack.class.getSimpleName(), props);
 
         app.synth();
     }

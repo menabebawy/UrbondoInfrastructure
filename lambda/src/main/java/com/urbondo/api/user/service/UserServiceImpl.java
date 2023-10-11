@@ -11,7 +11,6 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
-
     @Inject
     public UserServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
