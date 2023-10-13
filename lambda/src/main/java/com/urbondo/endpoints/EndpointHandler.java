@@ -37,8 +37,16 @@ public abstract class EndpointHandler {
         return new APIGatewayProxyResponseEvent().withStatusCode(SC_NO_CONTENT);
     }
 
+    final APIGatewayProxyResponseEvent methodNotAllowed() {
+        return new APIGatewayProxyResponseEvent().withStatusCode(SC_METHOD_NOT_ALLOWED);
+    }
+
     final <T> APIGatewayProxyResponseEvent ok(T body) {
         return succeededResponseEvent(SC_OK, body);
+    }
+
+    final APIGatewayProxyResponseEvent created(String body) {
+        return succeededResponseEvent(SC_CREATED, body);
     }
 
     final <T> APIGatewayProxyResponseEvent created(T body) {

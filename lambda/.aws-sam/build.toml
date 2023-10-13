@@ -4,7 +4,7 @@
 codeuri = "/home/mena/Documents/repos/UrbondoInfrastructure/lambda"
 runtime = "java17"
 architecture = "arm64"
-handler = "com.urbondo.PrintApiGatewayRequest"
+handler = "com.urbondo.ApiGatewayRequestHandler"
 manifest_hash = ""
 packagetype = "Zip"
 functions = ["Function"]

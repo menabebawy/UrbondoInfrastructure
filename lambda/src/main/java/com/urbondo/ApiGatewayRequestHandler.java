@@ -11,7 +11,7 @@ import com.urbondo.endpoints.UserEndpointsHandler;
 
 import static org.apache.http.HttpStatus.SC_METHOD_NOT_ALLOWED;
 
-public class PrintApiGatewayRequest implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+public class ApiGatewayRequestHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
     @Override
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent input, Context context) {
         EndpointHandler endpointHandler;

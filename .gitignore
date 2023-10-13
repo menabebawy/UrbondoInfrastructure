@@ -41,3 +41,5 @@ target
 secrets.yml
 .gradletasknamecache
 .sts4-cache
+
+lambda/src/main/resources/application-aws-cognito.yaml
