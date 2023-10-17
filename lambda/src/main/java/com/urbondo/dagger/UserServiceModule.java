@@ -72,10 +72,10 @@ public class UserServiceModule {
     }
 
     private static Optional<PropertySource<?>> getApplicationPropertySource() {
-        YamlPropertySourceLoader loader = new YamlPropertySourceLoader();
+
         try {
-            return loader.load("application-cognito.yaml",
-                               new ClassPathResource("application-cognito.yaml"))
+            return new YamlPropertySourceLoader().load("application-cognito.yaml",
+                                                       new ClassPathResource("application-cognito.yaml"))
                     .stream()
                     .findFirst();
         } catch (IOException exception) {
