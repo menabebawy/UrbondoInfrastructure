@@ -2,16 +2,15 @@ package com.urbondo.endpoints;
 
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.urbondo.api.user.service.*;
 import com.urbondo.dagger.DaggerUserEndpointComponent;
 import com.urbondo.lib.ResourceNotFoundException;
 import jakarta.validation.ValidationException;
-import org.springframework.beans.factory.annotation.Value;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 
 import static com.amazonaws.HttpMethod.*;
 import static com.amazonaws.services.dynamodbv2.model.AttributeAction.PUT;
@@ -26,13 +25,12 @@ public class UserEndpointsHandler extends EndpointHandler {
     CognitoService cognitoService;
 
     @Inject
-    Gson gson;
+    @Named("clientId")
+    String clientId;
 
-    @Value("${aws.cognito.clientId}")
-    private String clientId;
-
-    @Value("${aws.cognito.clientSecret}")
-    private String clientSecret;
+    @Inject
+    @Named("clientSecret")
+    String clientSecret;
 
     @Override
     public APIGatewayProxyResponseEvent handle(APIGatewayProxyRequestEvent requestEvent) {
@@ -63,20 +61,24 @@ public class UserEndpointsHandler extends EndpointHandler {
     private APIGatewayProxyResponseEvent userRegistration(APIGatewayProxyRequestEvent requestEvent) {
         if (requestEvent.getPath().contains("signup")) {
             SignupRequestDto requestDto = gson.fromJson(requestEvent.getBody(), SignupRequestDto.class);
-            JsonObject response = cognitoService.signup(requestDto, clientId, clientSecret);
-            return created(response);
+            try {
+                return created(cognitoService.signup(requestDto, clientId, clientSecret));
+            } catch (AwsServiceException awsServiceException) {
+                return badRequest(awsServiceException.getLocalizedMessage());
+            }
         } else if (requestEvent.getPath().contains("login")) {
-            return methodNotAllowed();
+            LoginRequestDtp requestDto = gson.fromJson(requestEvent.getBody(), LoginRequestDtp.class);
+            try {
+                return ok(cognitoService.initiateAuth(clientId,
+                                                      clientSecret,
+                                                      requestDto.username(),
+                                                      requestDto.password()));
+            } catch (AwsServiceException awsServiceException) {
+                return badRequest(awsServiceException.getLocalizedMessage());
+            }
         } else {
             return methodNotAllowed();
         }
-//        try {
-//            AddUserRequestDto requestDto = gson.fromJson(body, AddUserRequestDto.class);
-//            throwConstraintViolationExceptionIfNotValid(requestDto);
-//            return created(userService.add(requestDto));
-//        } catch (JsonSyntaxException | ValidationException | UserAlreadyFoundException exception) {
-//            return badRequest(exception.getMessage());
-//        }
     }
 
     private APIGatewayProxyResponseEvent updateUser(String body) {

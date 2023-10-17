@@ -49,7 +49,7 @@ public class UrbondoStack extends Stack {
                             FunctionProps.builder()
                                     .runtime(Runtime.JAVA_17)
                                     .code(Code.fromAsset("../lambda/build/distributions/lambda-0.1.zip"))
-                                    .handler("com.urbondo.PrintApiGatewayRequest")
+                                    .handler("com.urbondo.ApiGatewayRequestHandler")
                                     .memorySize(1024)
                                     .timeout(Duration.seconds(10))
                                     .logRetention(ONE_WEEK)

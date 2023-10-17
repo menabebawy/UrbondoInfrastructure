@@ -4,7 +4,7 @@ Resources:
     Properties:
       Timeout: 300
       MemorySize: 128
-      Handler: com.urbondo.PrintApiGatewayRequest
+      Handler: com.urbondo.ApiGatewayRequestHandler
       CodeUri: /home/mena/Documents/repos/UrbondoInfrastructure/lambda
       Runtime: java17
       Architectures:

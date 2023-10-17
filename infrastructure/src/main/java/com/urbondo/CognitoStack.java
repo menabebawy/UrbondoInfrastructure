@@ -11,9 +11,13 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
 import software.constructs.Construct;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static software.amazon.awssdk.regions.Region.US_EAST_1;
+import static software.amazon.awssdk.services.cognitoidentityprovider.model.DefaultEmailOptionType.CONFIRM_WITH_LINK;
+import static software.amazon.awssdk.services.cognitoidentityprovider.model.ExplicitAuthFlowsType.ALLOW_REFRESH_TOKEN_AUTH;
+import static software.amazon.awssdk.services.cognitoidentityprovider.model.ExplicitAuthFlowsType.ALLOW_USER_PASSWORD_AUTH;
 
 public class CognitoStack extends Stack {
     private static final Logger logger = LoggerFactory.getLogger(CognitoStack.class);
@@ -36,18 +40,49 @@ public class CognitoStack extends Stack {
     }
 
     private static CreateUserPoolResponse createUserPool(CognitoIdentityProviderClient cognitoClient) {
-        // Allow user to sign in using their email
+        List<SchemaAttributeType> schemaAttributeTypeList = new ArrayList<>();
+        schemaAttributeTypeList.add(SchemaAttributeType.builder()
+                                            .required(true)
+                                            .name("email")
+                                            .build());
+        schemaAttributeTypeList.add(SchemaAttributeType.builder()
+                                            .required(true)
+                                            .name("given_name")
+                                            .build());
+        schemaAttributeTypeList.add(SchemaAttributeType.builder()
+                                            .required(true)
+                                            .name("family_name")
+                                            .build());
+        schemaAttributeTypeList.add(SchemaAttributeType.builder()
+                                            .required(true)
+                                            .name("phone_number")
+                                            .build());
+
         List<String> aliasAttributes = new ArrayList<>();
         aliasAttributes.add("email");
 
         try {
             CreateUserPoolRequest poolRequest = CreateUserPoolRequest.builder()
                     .poolName(URBONDO_USER_POOL_NAME)
-                    .aliasAttributesWithStrings(aliasAttributes)
-                    .policies(userPoolPolicyType -> userPoolPolicyType.passwordPolicy(
-                            // Don't force password to include symbols
-                            passwordPolicyType -> passwordPolicyType.minimumLength(6).requireSymbols(false)))
+                    .schema(schemaAttributeTypeList)
+                    .usernameAttributesWithStrings(aliasAttributes)
+                    .verificationMessageTemplate(messageTemplate -> messageTemplate
+                            .defaultEmailOption(CONFIRM_WITH_LINK)
+                            .emailMessage("Welcome {####}")
+                            .emailMessageByLink("Welcome {##Verify Email##}")
+                            .emailSubject("Welcome to DVCA")
+                            .emailSubjectByLink("Welcome"))
+                    .emailVerificationMessage("Welcome {####}")
+                    .emailVerificationSubject("Welcome")
+                    .autoVerifiedAttributes()
+                    .policies(userPolicies -> userPolicies.passwordPolicy(
+                            passwordPolicy -> passwordPolicy
+                                    .minimumLength(8)
+                                    .requireUppercase(true)
+                                    .requireLowercase(true)
+                                    .requireSymbols(true)))
                     .build();
+
             return cognitoClient.createUserPool(poolRequest);
         } catch (CognitoIdentityProviderException exception) {
             logger.error(exception.awsErrorDetails().errorMessage());
@@ -61,6 +96,7 @@ public class CognitoStack extends Stack {
         try {
             CreateUserPoolClientRequest poolClientRequest = CreateUserPoolClientRequest.builder()
                     .userPoolId(userPoolId)
+                    .explicitAuthFlows(Arrays.asList(ALLOW_USER_PASSWORD_AUTH, ALLOW_REFRESH_TOKEN_AUTH))
                     .clientName("urbondo-user-pool-client")
                     .generateSecret(true)
                     .build();
