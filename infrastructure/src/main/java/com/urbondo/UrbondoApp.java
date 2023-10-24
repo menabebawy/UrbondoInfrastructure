@@ -11,14 +11,12 @@ public class UrbondoApp {
 
         StackProps props = StackProps.builder()
                 .env(Environment.builder()
-                        .account(System.getenv("CDK_DEFAULT_ACCOUNT"))
-                        .region(System.getenv("CDK_DEFAULT_REGION"))
-                        .build())
+                             .account(System.getenv("CDK_DEFAULT_ACCOUNT"))
+                             .region(System.getenv("CDK_DEFAULT_REGION"))
+                             .build())
                 .build();
 
         new UrbondoStack(app, UrbondoStack.class.getSimpleName(), props);
-
-        new CognitoStack(app, CognitoStack.class.getSimpleName(), props);
 
         app.synth();
     }

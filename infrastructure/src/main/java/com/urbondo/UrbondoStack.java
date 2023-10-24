@@ -4,17 +4,23 @@ import org.jetbrains.annotations.Nullable;
 import software.amazon.awscdk.*;
 import software.amazon.awscdk.services.apigateway.Resource;
 import software.amazon.awscdk.services.apigateway.*;
+import software.amazon.awscdk.services.cognito.*;
 import software.amazon.awscdk.services.dynamodb.*;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionProps;
 import software.amazon.awscdk.services.lambda.Runtime;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ResourceServerScopeType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ResourceServerType;
 import software.constructs.Construct;
 
+import java.util.Collections;
+
+import static software.amazon.awscdk.Duration.*;
 import static software.amazon.awscdk.services.apigateway.MethodLoggingLevel.INFO;
 import static software.amazon.awscdk.services.apigatewayv2.alpha.HttpMethod.GET;
 import static software.amazon.awscdk.services.apigatewayv2.alpha.HttpMethod.POST;
-import static software.amazon.awscdk.services.logs.RetentionDays.ONE_WEEK;
+import static software.amazon.awscdk.services.cognito.VerificationEmailStyle.CODE;
 
 public class UrbondoStack extends Stack {
     private static final Number READ_CAPACITY = 1;
@@ -22,8 +28,12 @@ public class UrbondoStack extends Stack {
     private static final String CATEGORY = "category";
     private static final String ANNOUNCEMENT = "announcement";
 
+    private static final String URBONDO_USER_POOL_NAME = "urbondo-user-pool";
+
     public UrbondoStack(@Nullable Construct scope, @Nullable String id, @Nullable StackProps props) {
         super(scope, id, props);
+
+        UserPool userPool = createCognitoUserPoolAndUserClient();
 
         Function lambdaFunction = createLambdaFunction();
 
@@ -36,27 +46,86 @@ public class UrbondoStack extends Stack {
         Table announcementTable = createAnnouncementTable();
         announcementTable.grantReadWriteData(lambdaFunction);
 
-        RestApi restApi = createRestApi(lambdaFunction);
+        RestApi restApi = createRestApi(lambdaFunction, userPool);
 
         new CfnOutput(this,
                       "HttApi",
                       CfnOutputProps.builder().description("Url for Http Api").value(restApi.getUrl()).build());
     }
 
+    private UserPool createCognitoUserPoolAndUserClient() {
+        String userClientName = "urbondo-user-pool-client";
+        String resourceServerName = "urbondo resource server";
+
+        StandardAttribute required = StandardAttribute.builder().required(true).build();
+
+        StandardAttributes standardAttributes = StandardAttributes.builder()
+                .email(required)
+                .givenName(required)
+                .familyName(required)
+                .phoneNumber(required)
+                .build();
+
+        PasswordPolicy passwordPolicy = PasswordPolicy.builder()
+                .minLength(8)
+                .requireUppercase(true)
+                .requireLowercase(true)
+                .requireSymbols(true)
+                .build();
+
+        UserPool userPool = new UserPool(this, URBONDO_USER_POOL_NAME + "_ID", UserPoolProps.builder()
+                .userPoolName(URBONDO_USER_POOL_NAME)
+                .standardAttributes(standardAttributes)
+                .signInAliases(SignInAliases.builder().email(true).build())
+                .passwordPolicy(passwordPolicy)
+                .email(UserPoolEmail.withCognito())
+                .autoVerify(AutoVerifiedAttrs.builder().email(true).build())
+                .userVerification(UserVerificationConfig.builder()
+                                          .emailBody("Welcome {####}")
+                                          .emailSubject("Welcome to Urbondo")
+                                          .emailStyle(CODE)
+                                          .build())
+                .build());
+
+        new UserPoolClient(this, userClientName + "_ID", UserPoolClientProps.builder()
+                .userPoolClientName(userClientName)
+                .userPool(userPool)
+                .generateSecret(true)
+                .accessTokenValidity(minutes(30))
+                .refreshTokenValidity(days(30))
+                .idTokenValidity(minutes(30))
+                .authFlows(AuthFlow.builder().userPassword(true).build())
+                .oAuth(OAuthSettings.builder()
+                               .flows(OAuthFlows.builder().implicitCodeGrant(true).build())
+                               .build())
+                .build());
+
+        ResourceServerType.builder()
+                .name(resourceServerName)
+                .scopes(Collections.singletonList(ResourceServerScopeType.builder()
+                                                          .scopeName("openid")
+                                                          .scopeDescription("Read profile")
+                                                          .build()))
+                .identifier("https://lt1chwlaef.execute-api.us-east-1.amazonaws.com")
+                .userPoolId(userPool.getUserPoolId())
+                .build();
+
+        return userPool;
+    }
+
     private Function createLambdaFunction() {
         return new Function(this,
-                            "PrintRequest",
+                            "ApiGatewayRequestHandlerID",
                             FunctionProps.builder()
                                     .runtime(Runtime.JAVA_17)
                                     .code(Code.fromAsset("../lambda/build/distributions/lambda-0.1.zip"))
                                     .handler("com.urbondo.ApiGatewayRequestHandler")
                                     .memorySize(1024)
-                                    .timeout(Duration.seconds(10))
-                                    .logRetention(ONE_WEEK)
+                                    .timeout(seconds(10))
                                     .build());
     }
 
-    private RestApi createRestApi(Function lambdaFunction) {
+    private RestApi createRestApi(Function lambdaFunction, UserPool userPool) {
         RestApiProps restApiProps = RestApiProps.builder()
                 .restApiName("Urbondo-REST-Api")
                 .deployOptions(StageOptions.builder().loggingLevel(INFO).build())
@@ -64,23 +133,30 @@ public class UrbondoStack extends Stack {
 
         RestApi restApi = new RestApi(this, "Urbondo-REST", restApiProps);
 
-        ResourceOptions resourceOptions = ResourceOptions.builder()
-                .defaultIntegration(LambdaIntegration.Builder.create(lambdaFunction).build())
+        CognitoUserPoolsAuthorizerProps cognitoUserPoolsAuthorizerProps = CognitoUserPoolsAuthorizerProps.builder()
+                .authorizerName("urbondo-cognito-authorizer")
+                .cognitoUserPools(Collections.singletonList(userPool))
                 .build();
 
-        Resource userResource = restApi.getRoot()
-                .addResource(USER, resourceOptions);
+        Authorizer authorizer = new CognitoUserPoolsAuthorizer(this,
+                                                               "urbondo-cognito-authorizer",
+                                                               cognitoUserPoolsAuthorizerProps);
+
+        ResourceOptions resourceOptions = ResourceOptions.builder()
+                .defaultIntegration(LambdaIntegration.Builder.create(lambdaFunction).build())
+                .defaultMethodOptions(MethodOptions.builder().authorizer(authorizer).build())
+                .build();
+
+        Resource userResource = restApi.getRoot().addResource(USER, resourceOptions);
         userResource.addResource("signup").addMethod(POST.name());
         userResource.addResource("login").addMethod(POST.name());
         userResource.addResource("{id}").addMethod(GET.name());
 
-        Resource categoryResource = restApi.getRoot()
-                .addResource(CATEGORY, resourceOptions);
+        Resource categoryResource = restApi.getRoot().addResource(CATEGORY, resourceOptions);
         categoryResource.addMethod(POST.name());
         categoryResource.addResource("{id}").addMethod(GET.name());
 
-        Resource announcementResource = restApi.getRoot()
-                .addResource(ANNOUNCEMENT, resourceOptions);
+        Resource announcementResource = restApi.getRoot().addResource(ANNOUNCEMENT, resourceOptions);
         announcementResource.addMethod(POST.name());
         announcementResource.addResource("{id}").addMethod(GET.name());
 
