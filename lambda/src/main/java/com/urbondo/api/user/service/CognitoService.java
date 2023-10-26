@@ -1,12 +1,18 @@
 package com.urbondo.api.user.service;
 
 import com.google.gson.JsonObject;
+import com.urbondo.api.user.repository.UserDao;
+import com.urbondo.api.user.service.dto.SignupRequestDto;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 
 public interface CognitoService {
-    JsonObject signup(SignupRequestDto signupRequestDto, String clientId, String clientSecret);
+    JsonObject signup(SignupRequestDto signupRequestDto);
 
-    JsonObject confirmSignUp(String clientId, String code, String username);
+    JsonObject confirmSignUp(String code, String username);
 
-    AuthenticationResultType initiateAuth(String clientId, String userPoolId, String username, String password);
+    UserDao getUser(String accessToken);
+
+    JsonObject resendConfirmationCode(String email);
+
+    AuthenticationResultType initiateAuth(String username, String password);
 }

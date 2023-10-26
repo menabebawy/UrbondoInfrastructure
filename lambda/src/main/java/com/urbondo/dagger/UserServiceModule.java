@@ -1,7 +1,6 @@
 package com.urbondo.dagger;
 
 import com.urbondo.api.user.repository.UserRepositoryImpl;
-import com.urbondo.api.user.service.CognitoService;
 import com.urbondo.api.user.service.CognitoServiceImpl;
 import com.urbondo.api.user.service.UserService;
 import com.urbondo.api.user.service.UserServiceImpl;
@@ -14,7 +13,6 @@ import org.springframework.core.io.ClassPathResource;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 
-import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.Objects;
@@ -31,23 +29,16 @@ public class UserServiceModule {
     @Singleton
     @Provides
     public UserService userService() {
-        return new UserServiceImpl(new UserRepositoryImpl(new DynamoDBConfig().dynamoDBMapper()));
+        return new UserServiceImpl(new UserRepositoryImpl(new DynamoDBConfig().dynamoDBMapper()),
+                                   new CognitoServiceImpl(CognitoIdentityProviderClient.builder()
+                                                                  .region(US_EAST_1)
+                                                                  .credentialsProvider(ProfileCredentialsProvider.create())
+                                                                  .build(),
+                                                          provideClientId(),
+                                                          provideClientSecret()));
     }
 
-    @Singleton
-    @Provides
-    public CognitoService cognitoService() {
-        return new CognitoServiceImpl(
-                CognitoIdentityProviderClient.builder()
-                        .region(US_EAST_1)
-                        .credentialsProvider(ProfileCredentialsProvider.create())
-                        .build());
-    }
-
-    @Singleton
-    @Provides
-    @Named("clientId")
-    String provideClientId() {
+    private String provideClientId() {
         Optional<PropertySource<?>> propertySource = getApplicationPropertySource();
 
         if (propertySource.isPresent() && propertySource.get().containsProperty(AWS_COGNITO_CLIENT_ID)) {
@@ -57,11 +48,7 @@ public class UserServiceModule {
         return "";
     }
 
-
-    @Singleton
-    @Provides
-    @Named("clientSecret")
-    String provideClientSecret() {
+    private String provideClientSecret() {
         Optional<PropertySource<?>> propertySource = getApplicationPropertySource();
 
         if (propertySource.isPresent() && propertySource.get().containsProperty(AWS_COGNITO_CLIENT_SECRET)) {

@@ -1,6 +1,9 @@
 package com.urbondo.api.user.service;
 
 import com.google.gson.JsonObject;
+import com.urbondo.api.user.repository.UserDao;
+import com.urbondo.api.user.service.dto.SignupRequestDto;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
 
@@ -14,27 +17,39 @@ import static software.amazon.awssdk.services.cognitoidentityprovider.model.Auth
 
 public class CognitoServiceImpl implements CognitoService {
     private final CognitoIdentityProviderClient cognitoIdentityProviderClient;
+    private final String clientId;
+    private final String clientSecret;
+
+    private static final String GIVEN_NAME = "given_name";
+    private static final String FAMILY_NAME = "family_name";
+    private static final String EMAIL = "email";
+    private static final String PHONE_NUMBER = "phone_number";
+
 
     @Inject
-    public CognitoServiceImpl(CognitoIdentityProviderClient cognitoIdentityProviderClient) {
+    public CognitoServiceImpl(CognitoIdentityProviderClient cognitoIdentityProviderClient,
+                              String clientId,
+                              String clientSecret) {
         this.cognitoIdentityProviderClient = cognitoIdentityProviderClient;
+        this.clientId = clientId;
+        this.clientSecret = clientSecret;
     }
 
     @Override
-    public JsonObject signup(SignupRequestDto signupRequestDto, String clientId, String clientSecret) {
-        AttributeType emailAttribute = AttributeType.builder().name("email").value(signupRequestDto.email()).build();
+    public JsonObject signup(SignupRequestDto signupRequestDto) throws AwsServiceException {
+        AttributeType emailAttribute = AttributeType.builder().name(EMAIL).value(signupRequestDto.email()).build();
         AttributeType firstNameAttribute = AttributeType.builder()
-                .name("given_name")
+                .name(GIVEN_NAME)
                 .value(signupRequestDto.firstName())
                 .build();
 
         AttributeType lastNameAttribute = AttributeType.builder()
-                .name("family_name")
+                .name(FAMILY_NAME)
                 .value(signupRequestDto.lastName())
                 .build();
 
         AttributeType phoneAttribute = AttributeType.builder()
-                .name("phone_number")
+                .name(PHONE_NUMBER)
                 .value(signupRequestDto.phone())
                 .build();
 
@@ -49,7 +64,7 @@ public class CognitoServiceImpl implements CognitoService {
                 .password(signupRequestDto.password())
                 .clientId(clientId)
                 .userAttributes(attributeTypeList)
-                .secretHash(calculateSecretHash(clientId, clientSecret, signupRequestDto.email()))
+                .secretHash(calculateSecretHash(signupRequestDto.email()))
                 .build();
 
         SignUpResponse signUpResponse = cognitoIdentityProviderClient.signUp(signUpRequest);
@@ -63,7 +78,7 @@ public class CognitoServiceImpl implements CognitoService {
         return createUserResult;
     }
 
-    public static String calculateSecretHash(String clientId, String clientSecret, String userName) {
+    public String calculateSecretHash(String userName) {
         final String HMAC_SHA256_ALGORITHM = "HmacSHA256";
 
         SecretKeySpec signingKey = new SecretKeySpec(clientSecret.getBytes(UTF_8), HMAC_SHA256_ALGORITHM);
@@ -79,11 +94,12 @@ public class CognitoServiceImpl implements CognitoService {
     }
 
     @Override
-    public JsonObject confirmSignUp(String clientId, String code, String username) {
+    public JsonObject confirmSignUp(String code, String username) {
         ConfirmSignUpRequest confirmSignUpRequest = ConfirmSignUpRequest.builder()
                 .clientId(clientId)
                 .username(username)
                 .confirmationCode(code)
+                .secretHash(calculateSecretHash(username))
                 .build();
         cognitoIdentityProviderClient.confirmSignUp(confirmSignUpRequest);
         JsonObject responsJsonObject = new JsonObject();
@@ -92,14 +108,48 @@ public class CognitoServiceImpl implements CognitoService {
     }
 
     @Override
-    public AuthenticationResultType initiateAuth(String clientId,
-                                                 String clientSecret,
-                                                 String username,
-                                                 String password) {
+    public UserDao getUser(String accessToken) {
+        GetUserResponse cognitoUser = cognitoIdentityProviderClient.getUser(GetUserRequest.builder()
+                                                                                    .accessToken(accessToken)
+                                                                                    .build());
+        return new UserDao(cognitoUser.username(),
+                           getValueOfAttribute(cognitoUser, GIVEN_NAME),
+                           getValueOfAttribute(cognitoUser, FAMILY_NAME),
+                           getValueOfAttribute(cognitoUser, EMAIL),
+                           getValueOfAttribute(cognitoUser, PHONE_NUMBER));
+    }
+
+    private static String getValueOfAttribute(GetUserResponse cognitoUser, String name) {
+        Optional<AttributeType> attribute = cognitoUser.userAttributes()
+                .stream()
+                .filter(attributeType -> attributeType.name().equals(name))
+                .findFirst();
+
+        if (attribute.isPresent())
+            return attribute.get().value();
+
+        return "";
+    }
+
+    @Override
+    public JsonObject resendConfirmationCode(String userName) throws AwsServiceException {
+        ResendConfirmationCodeRequest codeRequest = ResendConfirmationCodeRequest.builder()
+                .clientId(clientId)
+                .username(userName)
+                .build();
+
+        ResendConfirmationCodeResponse response = cognitoIdentityProviderClient.resendConfirmationCode(codeRequest);
+        JsonObject jsonResponse = new JsonObject();
+        jsonResponse.addProperty("method", response.codeDeliveryDetails().deliveryMediumAsString());
+        return jsonResponse;
+    }
+
+    @Override
+    public AuthenticationResultType initiateAuth(String username, String password) throws AwsServiceException {
         Map<String, String> authParameters = new HashMap<>();
         authParameters.put("USERNAME", username);
         authParameters.put("PASSWORD", password);
-        authParameters.put("SECRET_HASH", calculateSecretHash(clientId, clientSecret, username));
+        authParameters.put("SECRET_HASH", calculateSecretHash(username));
 
         InitiateAuthRequest authRequest = InitiateAuthRequest.builder()
                 .clientId(clientId)

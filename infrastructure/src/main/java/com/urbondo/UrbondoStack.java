@@ -75,6 +75,7 @@ public class UrbondoStack extends Stack {
 
         UserPool userPool = new UserPool(this, URBONDO_USER_POOL_NAME + "_ID", UserPoolProps.builder()
                 .userPoolName(URBONDO_USER_POOL_NAME)
+                .selfSignUpEnabled(true)
                 .standardAttributes(standardAttributes)
                 .signInAliases(SignInAliases.builder().email(true).build())
                 .passwordPolicy(passwordPolicy)
@@ -148,8 +149,12 @@ public class UrbondoStack extends Stack {
                 .build();
 
         Resource userResource = restApi.getRoot().addResource(USER, resourceOptions);
+        // I removed the authorizer manually since it has not been doable here
+        // Have to pick a solution
         userResource.addResource("signup").addMethod(POST.name());
         userResource.addResource("login").addMethod(POST.name());
+        userResource.addResource("confirm").addMethod(POST.name());
+        userResource.addResource("resendcode").addMethod(POST.name());
         userResource.addResource("{id}").addMethod(GET.name());
 
         Resource categoryResource = restApi.getRoot().addResource(CATEGORY, resourceOptions);

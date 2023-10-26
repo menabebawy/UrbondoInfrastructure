@@ -1,19 +1,71 @@
 package com.urbondo.api.user.service;
 
+import com.google.gson.JsonObject;
 import com.urbondo.api.user.repository.UserDao;
 import com.urbondo.api.user.repository.UserRepository;
+import com.urbondo.api.user.service.dto.SignupRequestDto;
+import com.urbondo.api.user.service.dto.UpdateUserRequestDto;
 import com.urbondo.lib.ResourceNotFoundException;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 
 import javax.inject.Inject;
 import java.util.Optional;
-import java.util.UUID;
 
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final CognitoService cognitoService;
 
     @Inject
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, CognitoService cognitoService) {
         this.userRepository = userRepository;
+        this.cognitoService = cognitoService;
+    }
+
+
+    @Override
+    public JsonObject signup(SignupRequestDto signupRequestDto) {
+        try {
+            return cognitoService.signup(signupRequestDto);
+        } catch (AwsServiceException exception) {
+            throw new AuthenticationProviderException(exception.getLocalizedMessage());
+        }
+    }
+
+    @Override
+    public JsonObject confirmSignUp(String code, String username) {
+        try {
+            return cognitoService.confirmSignUp(code, username);
+        } catch (AwsServiceException exception) {
+            throw new AuthenticationProviderException(exception.getLocalizedMessage());
+        }
+    }
+
+    @Override
+    public JsonObject resendConfirmationCode(String userName) {
+        try {
+            return cognitoService.resendConfirmationCode(userName);
+        } catch (AwsServiceException exception) {
+            throw new AuthenticationProviderException(exception.getLocalizedMessage());
+        }
+    }
+
+    @Override
+    public AuthenticationResultType initiateAuth(String username, String password) {
+        try {
+            AuthenticationResultType authenticationResultType = cognitoService.initiateAuth(username, password);
+            UserDao cognitoUser = cognitoService.getUser(authenticationResultType.accessToken());
+
+            userRepository.save(new UserDao(cognitoUser.getId(),
+                                            cognitoUser.getFirstName(),
+                                            cognitoUser.getLastName(),
+                                            cognitoUser.getEmail(),
+                                            cognitoUser.getPhone()));
+
+            return authenticationResultType;
+        } catch (AuthenticationProviderException exception) {
+            throw new AuthenticationProviderException(exception.getLocalizedMessage());
+        }
     }
 
     @Override
@@ -24,22 +76,6 @@ public class UserServiceImpl implements UserService {
         }
         return userDAO.get();
     }
-
-    @Override
-    public UserDao add(AddUserRequestDto requestDTO) {
-        if (userRepository.isEmailExist(requestDTO.email())) {
-            throw new UserAlreadyFoundException(requestDTO.email());
-        }
-
-        UserDao userDAO = new UserDao(UUID.randomUUID().toString(),
-                requestDTO.firstName(),
-                requestDTO.lastName(),
-                requestDTO.email(),
-                requestDTO.phone());
-
-        return userRepository.save(userDAO);
-    }
-
 
     @Override
     public UserDao update(UpdateUserRequestDto updateUserRequestDTO) {

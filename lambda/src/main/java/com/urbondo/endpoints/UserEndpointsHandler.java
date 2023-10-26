@@ -3,14 +3,15 @@ package com.urbondo.endpoints;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.google.gson.JsonSyntaxException;
-import com.urbondo.api.user.service.*;
+import com.urbondo.api.user.service.AuthenticationProviderException;
+import com.urbondo.api.user.service.UserNotFoundException;
+import com.urbondo.api.user.service.UserService;
+import com.urbondo.api.user.service.dto.*;
 import com.urbondo.dagger.DaggerUserEndpointComponent;
 import com.urbondo.lib.ResourceNotFoundException;
 import jakarta.validation.ValidationException;
-import software.amazon.awssdk.awscore.exception.AwsServiceException;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 
 import static com.amazonaws.HttpMethod.*;
 import static com.amazonaws.services.dynamodbv2.model.AttributeAction.PUT;
@@ -20,17 +21,6 @@ import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 public class UserEndpointsHandler extends EndpointHandler {
     @Inject
     UserService userService;
-
-    @Inject
-    CognitoService cognitoService;
-
-    @Inject
-    @Named("clientId")
-    String clientId;
-
-    @Inject
-    @Named("clientSecret")
-    String clientSecret;
 
     @Override
     public APIGatewayProxyResponseEvent handle(APIGatewayProxyRequestEvent requestEvent) {
@@ -62,19 +52,33 @@ public class UserEndpointsHandler extends EndpointHandler {
         if (requestEvent.getPath().contains("signup")) {
             SignupRequestDto requestDto = gson.fromJson(requestEvent.getBody(), SignupRequestDto.class);
             try {
-                return created(cognitoService.signup(requestDto, clientId, clientSecret));
-            } catch (AwsServiceException awsServiceException) {
-                return badRequest(awsServiceException.getLocalizedMessage());
+                return created(userService.signup(requestDto));
+            } catch (AuthenticationProviderException exception) {
+                return badRequest(exception.getLocalizedMessage());
             }
         } else if (requestEvent.getPath().contains("login")) {
             LoginRequestDtp requestDto = gson.fromJson(requestEvent.getBody(), LoginRequestDtp.class);
             try {
-                return ok(cognitoService.initiateAuth(clientId,
-                                                      clientSecret,
-                                                      requestDto.username(),
-                                                      requestDto.password()));
-            } catch (AwsServiceException awsServiceException) {
-                return badRequest(awsServiceException.getLocalizedMessage());
+                return ok(userService.initiateAuth(requestDto.username(),
+                                                   requestDto.password()));
+            } catch (AuthenticationProviderException exception) {
+                return badRequest(exception.getLocalizedMessage());
+            }
+        } else if (requestEvent.getPath().contains("confirm")) {
+            ConfirmationCodeRequestDto requestDto = gson.fromJson(requestEvent.getBody(),
+                                                                  ConfirmationCodeRequestDto.class);
+            try {
+                return ok(userService.confirmSignUp(requestDto.code(), requestDto.email()));
+            } catch (AuthenticationProviderException exception) {
+                return badRequest(exception.getLocalizedMessage());
+            }
+        } else if (requestEvent.getPath().contains("resendcode")) {
+            ResendConfirmationCodeRequestDto requestDto = gson.fromJson(requestEvent.getBody(),
+                                                                        ResendConfirmationCodeRequestDto.class);
+            try {
+                return ok(userService.resendConfirmationCode(requestDto.code()));
+            } catch (AuthenticationProviderException exception) {
+                return badRequest(exception.getLocalizedMessage());
             }
         } else {
             return methodNotAllowed();
