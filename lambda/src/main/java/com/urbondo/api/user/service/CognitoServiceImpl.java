@@ -3,7 +3,6 @@ package com.urbondo.api.user.service;
 import com.google.gson.JsonObject;
 import com.urbondo.api.user.repository.UserDao;
 import com.urbondo.api.user.service.dto.SignupRequestDto;
-import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
 
@@ -13,6 +12,7 @@ import javax.inject.Inject;
 import java.util.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static software.amazon.awssdk.services.cognitoidentityprovider.model.AuthFlowType.REFRESH_TOKEN_AUTH;
 import static software.amazon.awssdk.services.cognitoidentityprovider.model.AuthFlowType.USER_PASSWORD_AUTH;
 
 public class CognitoServiceImpl implements CognitoService {
@@ -36,7 +36,7 @@ public class CognitoServiceImpl implements CognitoService {
     }
 
     @Override
-    public JsonObject signup(SignupRequestDto signupRequestDto) throws AwsServiceException {
+    public JsonObject signup(SignupRequestDto signupRequestDto) {
         AttributeType emailAttribute = AttributeType.builder().name(EMAIL).value(signupRequestDto.email()).build();
         AttributeType firstNameAttribute = AttributeType.builder()
                 .name(GIVEN_NAME)
@@ -132,7 +132,7 @@ public class CognitoServiceImpl implements CognitoService {
     }
 
     @Override
-    public JsonObject resendConfirmationCode(String userName) throws AwsServiceException {
+    public JsonObject resendConfirmationCode(String userName) {
         ResendConfirmationCodeRequest codeRequest = ResendConfirmationCodeRequest.builder()
                 .clientId(clientId)
                 .username(userName)
@@ -145,16 +145,29 @@ public class CognitoServiceImpl implements CognitoService {
     }
 
     @Override
-    public AuthenticationResultType initiateAuth(String username, String password) throws AwsServiceException {
+    public AuthenticationResultType login(String username, String password) {
         Map<String, String> authParameters = new HashMap<>();
         authParameters.put("USERNAME", username);
         authParameters.put("PASSWORD", password);
         authParameters.put("SECRET_HASH", calculateSecretHash(username));
 
+        return initiateAuth(authParameters, USER_PASSWORD_AUTH);
+    }
+
+    @Override
+    public AuthenticationResultType refreshToken(String refreshToken, String username) {
+        Map<String, String> authParameters = new HashMap<>();
+        authParameters.put("REFRESH_TOKEN", refreshToken);
+        authParameters.put("SECRET_HASH", calculateSecretHash(username));
+
+        return initiateAuth(authParameters, REFRESH_TOKEN_AUTH);
+    }
+
+    private AuthenticationResultType initiateAuth(Map<String, String> params, AuthFlowType refreshTokenAuth) {
         InitiateAuthRequest authRequest = InitiateAuthRequest.builder()
                 .clientId(clientId)
-                .authParameters(authParameters)
-                .authFlow(USER_PASSWORD_AUTH)
+                .authParameters(params)
+                .authFlow(refreshTokenAuth)
                 .build();
 
         return cognitoIdentityProviderClient.initiateAuth(authRequest).authenticationResult();

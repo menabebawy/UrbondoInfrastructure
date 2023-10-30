@@ -4,5 +4,5 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
 @Valid
-public record ResendConfirmationCodeRequestDto(@NotBlank String code) {
+public record RefreshTokenRequestDto(@NotBlank String username, @NotBlank String refreshToken) {
 }

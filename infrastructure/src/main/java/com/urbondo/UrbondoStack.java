@@ -153,6 +153,7 @@ public class UrbondoStack extends Stack {
         // Have to pick a solution
         userResource.addResource("signup").addMethod(POST.name());
         userResource.addResource("login").addMethod(POST.name());
+        userResource.addResource("refreshtoken").addMethod(POST.name());
         userResource.addResource("confirm").addMethod(POST.name());
         userResource.addResource("resendcode").addMethod(POST.name());
         userResource.addResource("{id}").addMethod(GET.name());

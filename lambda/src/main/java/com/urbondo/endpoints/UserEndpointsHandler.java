@@ -50,38 +50,69 @@ public class UserEndpointsHandler extends EndpointHandler {
 
     private APIGatewayProxyResponseEvent userRegistration(APIGatewayProxyRequestEvent requestEvent) {
         if (requestEvent.getPath().contains("signup")) {
-            SignupRequestDto requestDto = gson.fromJson(requestEvent.getBody(), SignupRequestDto.class);
-            try {
-                return created(userService.signup(requestDto));
-            } catch (AuthenticationProviderException exception) {
-                return badRequest(exception.getLocalizedMessage());
-            }
+            return signup(requestEvent);
         } else if (requestEvent.getPath().contains("login")) {
-            LoginRequestDtp requestDto = gson.fromJson(requestEvent.getBody(), LoginRequestDtp.class);
-            try {
-                return ok(userService.initiateAuth(requestDto.username(),
-                                                   requestDto.password()));
-            } catch (AuthenticationProviderException exception) {
-                return badRequest(exception.getLocalizedMessage());
-            }
+            return login(requestEvent);
+        } else if (requestEvent.getPath().contains("refreshtoken")) {
+            return refreshToken(requestEvent);
         } else if (requestEvent.getPath().contains("confirm")) {
-            ConfirmationCodeRequestDto requestDto = gson.fromJson(requestEvent.getBody(),
-                                                                  ConfirmationCodeRequestDto.class);
-            try {
-                return ok(userService.confirmSignUp(requestDto.code(), requestDto.email()));
-            } catch (AuthenticationProviderException exception) {
-                return badRequest(exception.getLocalizedMessage());
-            }
+            return confirmCode(requestEvent);
         } else if (requestEvent.getPath().contains("resendcode")) {
-            ResendConfirmationCodeRequestDto requestDto = gson.fromJson(requestEvent.getBody(),
-                                                                        ResendConfirmationCodeRequestDto.class);
-            try {
-                return ok(userService.resendConfirmationCode(requestDto.code()));
-            } catch (AuthenticationProviderException exception) {
-                return badRequest(exception.getLocalizedMessage());
-            }
+            return resendConfirmationCode(requestEvent);
         } else {
             return methodNotAllowed();
+        }
+    }
+
+    private APIGatewayProxyResponseEvent resendConfirmationCode(APIGatewayProxyRequestEvent requestEvent) {
+        try {
+            ResendConfirmationCodeRequestDto requestDto = gson.fromJson(requestEvent.getBody(),
+                                                                        ResendConfirmationCodeRequestDto.class);
+            throwConstraintViolationExceptionIfNotValid(requestDto);
+            return ok(userService.resendConfirmationCode(requestDto.code()));
+        } catch (AuthenticationProviderException | ValidationException exception) {
+            return badRequest(exception.getLocalizedMessage());
+        }
+    }
+
+    private APIGatewayProxyResponseEvent confirmCode(APIGatewayProxyRequestEvent requestEvent) {
+        try {
+            ConfirmationCodeRequestDto requestDto = gson.fromJson(requestEvent.getBody(),
+                                                                  ConfirmationCodeRequestDto.class);
+            throwConstraintViolationExceptionIfNotValid(requestDto);
+            return ok(userService.confirmSignUp(requestDto.code(), requestDto.email()));
+        } catch (AuthenticationProviderException | ValidationException exception) {
+            return badRequest(exception.getLocalizedMessage());
+        }
+    }
+
+    private APIGatewayProxyResponseEvent refreshToken(APIGatewayProxyRequestEvent requestEvent) {
+        try {
+            RefreshTokenRequestDto requestDto = gson.fromJson(requestEvent.getBody(), RefreshTokenRequestDto.class);
+            throwConstraintViolationExceptionIfNotValid(requestDto);
+            return ok(userService.refreshToken(requestDto.refreshToken(), requestDto.username()));
+        } catch (AuthenticationProviderException | ValidationException exception) {
+            return badRequest(exception.getLocalizedMessage());
+        }
+    }
+
+    private APIGatewayProxyResponseEvent login(APIGatewayProxyRequestEvent requestEvent) {
+        try {
+            LoginRequestDtp requestDto = gson.fromJson(requestEvent.getBody(), LoginRequestDtp.class);
+            throwConstraintViolationExceptionIfNotValid(requestDto);
+            return ok(userService.login(requestDto.username(), requestDto.password()));
+        } catch (AuthenticationProviderException | ValidationException exception) {
+            return badRequest(exception.getLocalizedMessage());
+        }
+    }
+
+    private APIGatewayProxyResponseEvent signup(APIGatewayProxyRequestEvent requestEvent) {
+        try {
+            SignupRequestDto requestDto = gson.fromJson(requestEvent.getBody(), SignupRequestDto.class);
+            throwConstraintViolationExceptionIfNotValid(requestDto);
+            return created(userService.signup(requestDto));
+        } catch (AuthenticationProviderException | ValidationException exception) {
+            return badRequest(exception.getLocalizedMessage());
         }
     }
 

@@ -14,5 +14,7 @@ public interface CognitoService {
 
     JsonObject resendConfirmationCode(String email);
 
-    AuthenticationResultType initiateAuth(String username, String password);
+    AuthenticationResultType login(String username, String password);
+
+    AuthenticationResultType refreshToken(String refreshToken, String username);
 }

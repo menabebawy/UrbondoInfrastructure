@@ -1,4 +1,9 @@
 package com.urbondo.api.user.service.dto;
 
-public record LoginRequestDtp(String username, String password) {
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+
+@Valid
+public record LoginRequestDtp(@NotBlank @Email String username, @NotBlank String password) {
 }

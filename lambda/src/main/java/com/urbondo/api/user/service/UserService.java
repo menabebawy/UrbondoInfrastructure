@@ -15,7 +15,9 @@ public interface UserService {
 
     JsonObject resendConfirmationCode(String userName);
 
-    AuthenticationResultType initiateAuth(String username, String password);
+    AuthenticationResultType login(String username, String password);
+
+    AuthenticationResultType refreshToken(String refreshToken, String username);
 
     UserDao findById(String id) throws ResourceNotFoundException;
 

@@ -51,9 +51,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public AuthenticationResultType initiateAuth(String username, String password) {
+    public AuthenticationResultType login(String username, String password) {
         try {
-            AuthenticationResultType authenticationResultType = cognitoService.initiateAuth(username, password);
+            AuthenticationResultType authenticationResultType = cognitoService.login(username, password);
             UserDao cognitoUser = cognitoService.getUser(authenticationResultType.accessToken());
 
             userRepository.save(new UserDao(cognitoUser.getId(),
@@ -66,6 +66,11 @@ public class UserServiceImpl implements UserService {
         } catch (AuthenticationProviderException exception) {
             throw new AuthenticationProviderException(exception.getLocalizedMessage());
         }
+    }
+
+    @Override
+    public AuthenticationResultType refreshToken(String refreshToken, String username) {
+        return cognitoService.refreshToken(refreshToken, username);
     }
 
     @Override
