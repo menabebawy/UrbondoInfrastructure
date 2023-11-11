@@ -15,6 +15,8 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.ResourceSer
 import software.constructs.Construct;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static software.amazon.awscdk.Duration.*;
 import static software.amazon.awscdk.services.apigateway.MethodLoggingLevel.INFO;
@@ -127,6 +129,9 @@ public class UrbondoStack extends Stack {
     }
 
     private RestApi createRestApi(Function lambdaFunction, UserPool userPool) {
+        Map<String, Boolean> idParam = new HashMap<>();
+        idParam.put("method.request.querystring.id", true);
+
         RestApiProps restApiProps = RestApiProps.builder()
                 .restApiName("Urbondo-REST-Api")
                 .deployOptions(StageOptions.builder().loggingLevel(INFO).build())
@@ -143,28 +148,57 @@ public class UrbondoStack extends Stack {
                                                                "urbondo-cognito-authorizer",
                                                                cognitoUserPoolsAuthorizerProps);
 
-        ResourceOptions resourceOptions = ResourceOptions.builder()
-                .defaultIntegration(LambdaIntegration.Builder.create(lambdaFunction).build())
-                .defaultMethodOptions(MethodOptions.builder().authorizer(authorizer).build())
+        MethodOptions methodOptions = MethodOptions.builder()
+                .authorizer(authorizer)
                 .build();
 
-        Resource userResource = restApi.getRoot().addResource(USER, resourceOptions);
-        // I removed the authorizer manually since it has not been doable here
-        // Have to pick a solution
+        LambdaIntegration lambdaIntegration = LambdaIntegration.Builder.create(lambdaFunction).build();
+
+        ResourceOptions resourceOptions = ResourceOptions.builder()
+                .defaultIntegration(lambdaIntegration)
+                .defaultMethodOptions(methodOptions)
+                .build();
+
+        ResourceOptions userResourceOptions = ResourceOptions.builder()
+                .defaultIntegration(lambdaIntegration)
+                .build();
+
+        RequestValidatorOptions queryParamRequestValidatorOptions = RequestValidatorOptions.builder()
+                .validateRequestParameters(true)
+                .build();
+
+        Resource userResource = restApi.getRoot().addResource(USER, userResourceOptions);
         userResource.addResource("signup").addMethod(POST.name());
         userResource.addResource("login").addMethod(POST.name());
         userResource.addResource("refreshtoken").addMethod(POST.name());
         userResource.addResource("confirm").addMethod(POST.name());
         userResource.addResource("resendcode").addMethod(POST.name());
-        userResource.addResource("{id}").addMethod(GET.name());
+        userResource.addResource("{id}")
+                .addMethod(GET.name(),
+                           lambdaIntegration,
+                           MethodOptions.builder()
+                                   .requestValidatorOptions(queryParamRequestValidatorOptions)
+                                   .requestParameters(idParam).build());
 
         Resource categoryResource = restApi.getRoot().addResource(CATEGORY, resourceOptions);
         categoryResource.addMethod(POST.name());
-        categoryResource.addResource("{id}").addMethod(GET.name());
+        categoryResource.addResource("{id}")
+                .addMethod(GET.name(),
+                           lambdaIntegration,
+                           MethodOptions.builder()
+                                   .authorizer(authorizer)
+                                   .requestValidatorOptions(queryParamRequestValidatorOptions)
+                                   .requestParameters(idParam).build());
 
         Resource announcementResource = restApi.getRoot().addResource(ANNOUNCEMENT, resourceOptions);
         announcementResource.addMethod(POST.name());
-        announcementResource.addResource("{id}").addMethod(GET.name());
+        announcementResource.addResource("{id}")
+                .addMethod(GET.name(),
+                           lambdaIntegration,
+                           MethodOptions.builder()
+                                   .authorizer(authorizer)
+                                   .requestValidatorOptions(queryParamRequestValidatorOptions)
+                                   .requestParameters(idParam).build());
 
         return restApi;
     }
