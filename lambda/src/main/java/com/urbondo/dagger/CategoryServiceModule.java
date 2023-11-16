@@ -14,6 +14,6 @@ public class CategoryServiceModule {
     @Singleton
     @Provides
     public CategoryService provideCategoryService() {
-        return new CategoryServiceImpl(new CategoryRepositoryImpl(new DynamoDBConfig().dynamoDBMapper()));
+        return new CategoryServiceImpl(new CategoryRepositoryImpl(DynamoDBConfig.getInstance().getDynamoDBMapper()));
     }
 }

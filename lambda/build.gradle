@@ -8,10 +8,19 @@ group = 'com.urbondo'
 version = '0.1'
 
 repositories {
+    maven {
+        url "http://localhost:8081/repository/maven-public/"
+        allowInsecureProtocol = true
+        credentials {
+            username project.repoUser
+            password project.repoPassword
+        }
+    }
     mavenCentral()
 }
 
 dependencies {
+    compileOnly 'com.urbondo:lib:0.0.1'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework:spring-web:6.0.0'
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.2'
@@ -21,7 +30,6 @@ dependencies {
     implementation 'org.hibernate:hibernate-validator:8.0.1.Final'
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'com.google.dagger:dagger:2.39.1'
-    implementation project(path: ':lib')
     annotationProcessor 'com.google.dagger:dagger-compiler:2.39.1'
     runtimeOnly 'com.amazonaws:aws-lambda-java-log4j2:1.5.1'
     testImplementation platform('org.junit:junit-bom:5.9.1')

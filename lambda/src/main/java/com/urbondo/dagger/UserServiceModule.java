@@ -29,7 +29,7 @@ public class UserServiceModule {
     @Singleton
     @Provides
     public UserService userService() {
-        return new UserServiceImpl(new UserRepositoryImpl(new DynamoDBConfig().dynamoDBMapper()),
+        return new UserServiceImpl(new UserRepositoryImpl(DynamoDBConfig.getInstance().getDynamoDBMapper()),
                                    new CognitoServiceImpl(CognitoIdentityProviderClient.builder()
                                                                   .region(US_EAST_1)
                                                                   .credentialsProvider(ProfileCredentialsProvider.create())

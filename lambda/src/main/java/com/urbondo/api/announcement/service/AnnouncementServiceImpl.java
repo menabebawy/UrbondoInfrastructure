@@ -16,7 +16,8 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     private final CategoryRepository categoryRepository;
 
     @Inject
-    public AnnouncementServiceImpl(UrbondoRepository<AnnouncementDao> announcementRepository, CategoryRepository categoryRepository) {
+    public AnnouncementServiceImpl(UrbondoRepository<AnnouncementDao> announcementRepository,
+                                   CategoryRepository categoryRepository) {
         this.announcementRepository = announcementRepository;
         this.categoryRepository = categoryRepository;
     }
@@ -37,11 +38,11 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         CategoryDao categoryDAO = getCategoryDaoOrThrowException(requestDTO.getCategoryId());
 
         AnnouncementDao announcementDAO = new AnnouncementDao(UUID.randomUUID().toString(),
-                requestDTO.getTitle(),
-                requestDTO.getBody(),
-                requestDTO.getCategoryId(),
-                categoryDAO.getTitle(),
-                requestDTO.getUserId());
+                                                              requestDTO.getTitle(),
+                                                              requestDTO.getBody(),
+                                                              requestDTO.getCategoryId(),
+                                                              categoryDAO.getTitle(),
+                                                              requestDTO.getUserId());
         return announcementRepository.save(announcementDAO);
     }
 

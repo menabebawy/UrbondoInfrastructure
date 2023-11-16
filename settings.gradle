@@ -1,5 +1,3 @@
 rootProject.name = 'UrbondoInfrastructure'
 include 'lambda'
 include 'infrastructure'
-include ":lib"
-project(':lib').projectDir = new File(settingsDir, '../UrbondoLibrary/lib')

@@ -43,3 +43,4 @@ secrets.yml
 .sts4-cache
 
 lambda/src/main/resources/application-aws-cognito.yaml
+gradle.properties

@@ -63,7 +63,7 @@ public abstract class EndpointHandler {
     private APIGatewayProxyResponseEvent failedResponseEvent(int statusCode, HttpStatus status, String message) {
         return new APIGatewayProxyResponseEvent()
                 .withStatusCode(statusCode)
-                .withBody(gson.toJson(new ErrorResponse(status, message)))
+                .withBody(gson.toJson(new ErrorResponse(statusCode, status.name(), message)))
                 .withHeaders(Collections.singletonMap("content-type", "application/json"));
     }
 

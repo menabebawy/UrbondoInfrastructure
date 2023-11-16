@@ -17,7 +17,7 @@ public class AnnouncementServiceModule {
     @Provides
     public AnnouncementService announcementService() {
         return new AnnouncementServiceImpl(
-                new AnnouncementRepositoryImpl(new DynamoDBConfig().dynamoDBMapper()),
-                new CategoryRepositoryImpl(new DynamoDBConfig().dynamoDBMapper()));
+                new AnnouncementRepositoryImpl(DynamoDBConfig.getInstance().getDynamoDBMapper()),
+                new CategoryRepositoryImpl(DynamoDBConfig.getInstance().getDynamoDBMapper()));
     }
 }

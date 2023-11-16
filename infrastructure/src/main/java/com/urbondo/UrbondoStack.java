@@ -16,9 +16,13 @@ import software.constructs.Construct;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static software.amazon.awscdk.Duration.*;
+import static software.amazon.awscdk.services.apigateway.JsonSchemaType.OBJECT;
+import static software.amazon.awscdk.services.apigateway.JsonSchemaType.STRING;
+import static software.amazon.awscdk.services.apigateway.JsonSchemaVersion.DRAFT4;
 import static software.amazon.awscdk.services.apigateway.MethodLoggingLevel.INFO;
 import static software.amazon.awscdk.services.apigatewayv2.alpha.HttpMethod.GET;
 import static software.amazon.awscdk.services.apigatewayv2.alpha.HttpMethod.POST;
@@ -130,7 +134,7 @@ public class UrbondoStack extends Stack {
 
     private RestApi createRestApi(Function lambdaFunction, UserPool userPool) {
         Map<String, Boolean> idParam = new HashMap<>();
-        idParam.put("method.request.querystring.id", true);
+        idParam.put("method.request.path.id", true);
 
         RestApiProps restApiProps = RestApiProps.builder()
                 .restApiName("Urbondo-REST-Api")
@@ -164,11 +168,58 @@ public class UrbondoStack extends Stack {
                 .build();
 
         RequestValidatorOptions queryParamRequestValidatorOptions = RequestValidatorOptions.builder()
+                .requestValidatorName("id-validator")
                 .validateRequestParameters(true)
                 .build();
 
+        RequestValidatorOptions bodyRequestValidatorOptions = RequestValidatorOptions.builder()
+                .requestValidatorName("body-validator")
+                .validateRequestBody(true)
+                .build();
+
+        Map<String, JsonSchema> signupModelProperties = new HashMap<>();
+        signupModelProperties.put("firstName", JsonSchema.builder().type(STRING).build());
+        signupModelProperties.put("lastName", JsonSchema.builder().type(STRING).build());
+        signupModelProperties.put("email", JsonSchema.builder().type(STRING).build());
+        signupModelProperties.put("phone", JsonSchema.builder().type(STRING).build());
+        signupModelProperties.put("password", JsonSchema.builder().type(STRING).build());
+
+        IModel signupRequestModel = new Model(this,
+                                              "signup-request-body-id",
+                                              ModelProps.builder()
+                                                      .schema(JsonSchema.builder()
+                                                                      .required(List.of("firstName",
+                                                                                        "lastName",
+                                                                                        "email",
+                                                                                        "phone",
+                                                                                        "password"))
+                                                                      .description("")
+                                                                      .title("signup-request-body-model")
+                                                                      .schema(DRAFT4)
+                                                                      .type(OBJECT)
+                                                                      .properties(signupModelProperties)
+                                                                      .build())
+                                                      .restApi(restApi)
+                                                      .modelName("dd")
+                                                      .build());
+
+        Map<String, IModel> models = new HashMap<>();
+        models.put("application/json", signupRequestModel);
+
+        RequestValidator paramRequestValidator = restApi.addRequestValidator("queryParamRequestValidator",
+                                                                             queryParamRequestValidatorOptions);
+        RequestValidator bodyRequestValidator = restApi.addRequestValidator("bodyRequestValidator",
+                                                                            bodyRequestValidatorOptions);
+
+
         Resource userResource = restApi.getRoot().addResource(USER, userResourceOptions);
-        userResource.addResource("signup").addMethod(POST.name());
+        userResource.addResource("signup")
+                .addMethod(POST.name(),
+                           lambdaIntegration,
+                           MethodOptions.builder()
+                                   .requestValidator(bodyRequestValidator)
+                                   .requestModels(models)
+                                   .build());
         userResource.addResource("login").addMethod(POST.name());
         userResource.addResource("refreshtoken").addMethod(POST.name());
         userResource.addResource("confirm").addMethod(POST.name());
@@ -177,8 +228,9 @@ public class UrbondoStack extends Stack {
                 .addMethod(GET.name(),
                            lambdaIntegration,
                            MethodOptions.builder()
-                                   .requestValidatorOptions(queryParamRequestValidatorOptions)
-                                   .requestParameters(idParam).build());
+                                   .requestValidator(paramRequestValidator)
+                                   .requestParameters(idParam)
+                                   .build());
 
         Resource categoryResource = restApi.getRoot().addResource(CATEGORY, resourceOptions);
         categoryResource.addMethod(POST.name());
@@ -187,8 +239,9 @@ public class UrbondoStack extends Stack {
                            lambdaIntegration,
                            MethodOptions.builder()
                                    .authorizer(authorizer)
-                                   .requestValidatorOptions(queryParamRequestValidatorOptions)
-                                   .requestParameters(idParam).build());
+                                   .requestValidator(paramRequestValidator)
+                                   .requestParameters(idParam)
+                                   .build());
 
         Resource announcementResource = restApi.getRoot().addResource(ANNOUNCEMENT, resourceOptions);
         announcementResource.addMethod(POST.name());
@@ -197,8 +250,9 @@ public class UrbondoStack extends Stack {
                            lambdaIntegration,
                            MethodOptions.builder()
                                    .authorizer(authorizer)
-                                   .requestValidatorOptions(queryParamRequestValidatorOptions)
-                                   .requestParameters(idParam).build());
+                                   .requestValidator(paramRequestValidator)
+                                   .requestParameters(idParam)
+                                   .build());
 
         return restApi;
     }
